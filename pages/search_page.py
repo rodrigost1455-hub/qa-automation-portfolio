@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from pages.base_page import BasePage
 from utils.config import Config
@@ -33,6 +34,7 @@ class SearchPage(BasePage):
     _PRODUCT_PRICES   = (By.CLASS_NAME, "inventory_item_price")
     _PRODUCT_CARDS    = (By.CLASS_NAME, "inventory_item")
     _ADD_TO_CART_BTNS = (By.CSS_SELECTOR, "[data-test^='add-to-cart']")
+    _REMOVE_BTNS      = (By.CSS_SELECTOR, "[data-test^='remove']")
     _CART_BADGE       = (By.CLASS_NAME, "shopping_cart_badge")
     _PAGE_TITLE       = (By.CLASS_NAME, "title")
 
@@ -76,7 +78,19 @@ class SearchPage(BasePage):
         return self
 
     def add_product_to_cart(self, index: int = 0) -> SearchPage:
-        """Click the 'Add to cart' button for the product at *index*."""
+        """
+        Click the 'Add to cart' button for the product at *index* and wait
+        for the action to commit before returning.
+
+        Sauce Demo transitions the clicked button from 'Add to cart' → 'Remove'
+        synchronously in React state. Waiting for that transition ensures the
+        caller receives a stable DOM regardless of browser rendering speed.
+        """
+        remove_count_before = len(self.driver.find_elements(*self._REMOVE_BTNS))
         buttons = self.find_all(self._ADD_TO_CART_BTNS)
         buttons[index].click()
+        # Explicit wait: one more 'Remove' button must appear before we return
+        WebDriverWait(self.driver, Config.EXPLICIT_WAIT).until(
+            lambda d: len(d.find_elements(*self._REMOVE_BTNS)) > remove_count_before
+        )
         return self
