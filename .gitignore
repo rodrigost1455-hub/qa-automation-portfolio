@@ -205,3 +205,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# QA Framework — generated artifacts (keep directory, ignore contents)
+reports/*.html
+reports/*.png
+reports/*.xml
+reports/*.json
+playwright-report/
